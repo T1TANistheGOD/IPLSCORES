@@ -1,47 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" device-width content="width=, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IPLSCORES</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" type="image/x-icon" href="images/ipl.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
     <script src="script.js" defer></script>
-  </head>
-  <body>
-    <div class="header">
-      <a href="aboutus.html" class="a">
-        <div class="title">
-          <img src="images/ipl.png" alt="IPL LOGO"/>
-          <h1>IPLSCORES</h1>
-        </div>
-      </a>
-      <div class="nav">
-        <a href="index.html">MATCHES</a>
-        <a href="standings.html">STANDINGS</a>
-      </div>
+    <script src="https://kit.fontawesome.com/406561f65a.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="a">
+            <div class="title">
+                <img src="images/ipl-logo.png" alt="IPL LOGO"/>
+                <h1>IPLSCORES</h1>
+            </div>
+        </a>
+        <nav class="nav">
+            <a href="#matches" class="nav-link active" data-section="matches">MATCHES</a>
+            <a href="#results" class="nav-link" data-section="results">RESULTS</a>
+            <a href="#standings" class="nav-link" data-section="standings">STANDINGS</a>
+        </nav>
+    </header>
+
+    <!-- MATCHES SECTION -->
+    <div class="content section" id="matches" data-section="matches">
+        <h1>MATCHES</h1>
+        <div class="container"><div class="loading"></div></div>
     </div>
-    <div class="content">
-      <h1>RESULTS</h1>
-      <div class="container"><div class="loading"></div></div>
+
+    <!-- RESULTS SECTION -->
+    <div class="content section" id="results" data-section="results" style="display: none;">
+        <h1>RESULTS</h1>
+        <div class="container"><div class="loading"></div></div>
     </div>
+
+    <!-- STANDINGS SECTION -->
+    <div class="content section" id="standings" data-section="standings" style="display: none;">
+        <h1>STANDINGS</h1>
+        <div class="container"><div class="loading"></div></div>
+    </div>
+
     <footer class="footer">
-        <p id="con">CONTACT US ON:</p>
-        <section class="fc">
-          <div class="social">
-            <a href="https://www.facebook.com/sumit.bati.1" target="_blank"><i class="fa-brands fa-facebook"></i></a>
-          </div>
-          <div class="squad">
-              
-              <div><p>Sumit Bati</p><p id="roll">544</p></div>
-              
-          </div>
-        </section>
-        <div class="cr">
-            <p id="cpr">Copyright &copy; 2024</p>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <img src="images/ipl.png" alt="IPL Logo"/>
+                <h2>IPLSCORES</h2>
+                <p>Your go-to destination for real-time IPL match scores and standings.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Navigate</h3>
+                <a href="#matches" class="footer-link" data-section="matches">Matches</a>
+                <a href="#results" class="footer-link" data-section="results">Results</a>
+                <a href="#standings" class="footer-link" data-section="standings">Standings</a>
+            </div>
+            <div class="footer-col">
+                <h3>Credits</h3>
+                <div class="footer-social-icons">
+                    <a href="https://www.facebook.com/sumit.bati.1" target="_blank" class="social-badge"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/sumitbati81" target="_blank" class="social-badge"><i class="fab  fa-instagram"></i></a>
+                    <a href="https://github.com/T1TANistheGOD" target="_blank" class="social-badge"><i class="fa-brands fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright © IPL 2026 All Rights Reserved &middot; Data provided by LiveScore API</p>
         </div>
     </footer>
-  </body> 
+
+    <script src="https://kit.fontawesome.com/406561f65a.js" crossorigin="anonymous"></script>
+</body>
 </html>
