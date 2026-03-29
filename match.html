@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IPL Match Details</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" type="image/x-icon" href="images/ipl.png">
+    <script src="script.js" defer></script>
+</head>
+<body id="match-page" class="match-page">
+    <header class="header">
+        <a href="index.html" class="a">
+            <div class="title">
+                <img src="images/ipl-logo.png" alt="IPL LOGO"/>
+                <h1>IPLSCORES</h1>
+            </div>
+        </a>
+        <nav class="nav">
+            <a href="index.html#matches" class="match-nav-link">MATCHES</a>
+            <a href="index.html#results" class="match-nav-link">RESULTS</a>
+            <a href="index.html#standings" class="match-nav-link">STANDINGS</a>
+        </nav>
+    </header>
+
+    <main class="match-main">
+        <section class="box match-summary-box">
+            <div class="matchinfo">
+                <div class="mno" id="match-title">IPL Match</div>
+                <div class="match-datetime" id="match-date">Date unavailable</div>
+            </div>
+
+            <div class="matchscore">
+                <div class="team team-left">
+                    <img id="team-one-logo" class="match-team-logo" alt="Team 1 logo" />
+                    <div class="team-info team-info-left">
+                        <div class="tname" id="team-one-name">Team 1</div>
+                        <div class="tscore">
+                            <div class="mains" id="team-one-score">-/-</div>
+                            <div class="overs" id="team-one-overs">- ov</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vs-badge">VS</div>
+
+                <div class="team team-right">
+                    <div class="team-info team-info-right">
+                        <div class="tname" id="team-two-name">Team 2</div>
+                        <div class="tscore">
+                            <div class="mains" id="team-two-score">-/-</div>
+                            <div class="overs" id="team-two-overs">- ov</div>
+                        </div>
+                    </div>
+                    <img id="team-two-logo" class="match-team-logo" alt="Team 2 logo" />
+                </div>
+            </div>
+
+            <div class="state" id="match-status">Loading...</div>
+        </section>
+
+        <!-- INNINGS TABS -->
+        <section class="innings-tabs-wrapper" id="innings-tabs" hidden></section>
+
+        <!-- LOADING STATE -->
+        <section id="loading-state" class="loading-wrap">
+            <div class="loading"></div>
+        </section>
+
+        <!-- ERROR STATE -->
+        <section id="error-state" class="error-wrap" hidden>
+            <h3>Could not load match details</h3>
+            <p id="error-text">Please try again in a moment.</p>
+        </section>
+
+        <!-- INNINGS SCORECARD PANELS -->
+        <section id="innings-root" class="innings-root" hidden></section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <img src="images/ipl.png" alt="IPL Logo"/>
+                <h2>IPLSCORES</h2>
+                <p>Your go-to destination for real-time IPL match scores and standings.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Navigate</h3>
+                <a href="index.html#matches">Matches</a>
+                <a href="index.html#results">Results</a>
+                <a href="index.html#standings">Standings</a>
+            </div>
+            <div class="footer-col">
+                <h3>Credits</h3>
+                <div class="footer-social-icons">
+                    <a href="https://www.facebook.com/sumit.bati.1" target="_blank" class="social-badge"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/sumitbati81" target="_blank" class="social-badge"><i class="fab fa-instagram"></i></a>
+                    <a href="https://github.com/T1TANistheGOD" target="_blank" class="social-badge"><i class="fa-brands fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Copyright © IPL 2026 All Rights Reserved &middot; Data provided by LiveScore API</p>
+        </div>
+    </footer>
+
+    <script src="https://kit.fontawesome.com/406561f65a.js" crossorigin="anonymous"></script>
+</body>
+</html>
