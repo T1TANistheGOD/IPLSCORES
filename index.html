@@ -1,79 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>IPLSCORES</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css" />
-    <link rel="icon" type="image/x-icon" href="images/ipl.png">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
-    <script src="script.js" defer></script>
-    <script src="https://kit.fontawesome.com/406561f65a.js" crossorigin="anonymous"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Champions League Hub 2025/26</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="images/ucl.png" type="image/x-icon">
 </head>
 <body>
-    <header class="header">
-        <a href="index.html" class="a">
-            <div class="title">
-                <img src="images/ipl-logo.png" alt="IPL LOGO"/>
-                <h1>IPLSCORES</h1>
-            </div>
-        </a>
-        <nav class="nav">
-            <a href="#matches" class="nav-link active" data-section="matches">MATCHES</a>
-            <a href="#results" class="nav-link" data-section="results">RESULTS</a>
-            <a href="#standings" class="nav-link" data-section="standings">STANDINGS</a>
-        </nav>
-    </header>
 
-    <!-- MATCHES SECTION -->
-    <div class="content section" id="matches" data-section="matches">
-        <h1>MATCHES</h1>
-        <div class="container"><div class="loading"></div></div>
+<!-- ═══════════════════════════ MAIN NAVBAR ══════════════════════════ -->
+<header class="navbar" id="navbar">
+  <div class="nav-inner">
+
+    <!-- LEFT: UCL LOGO -->
+    <a href="#" class="nav-logo">
+      <img class="logo-star" src="images/ucl2.svg" alt="UCL emblem" />
+    </a>
+
+    <!-- CENTER: NAV LINKS -->
+    <nav class="nav-links" id="navLinks">
+      <a href="#" class="nav-link active" data-page="matches" onclick="navigateTo(event,'matches')">
+        Matches
+      </a>
+      <a href="#" class="nav-link" data-page="standings" onclick="navigateTo(event,'standings')">
+        Standings
+      </a>
+      <a href="#" class="nav-link" data-page="teams" onclick="navigateTo(event,'teams')">
+        Teams
+      </a>
+    </nav>
+
+  </div>
+</header>
+
+<!-- ═══════════════════════════ MAIN CONTENT ═════════════════════════ -->
+<main class="main-content" id="mainContent">
+
+  <!-- ── MATCHES PAGE ────────────────────────────────── -->
+  <section class="page active" id="page-matches">
+    <div class="page-header">
+      <h2 class="page-title">Matches</h2>
+      <div class="match-filters">
+        <button class="filter-btn active" onclick="filterMatches(this,'all')">All</button>
+        <button class="filter-btn" onclick="filterMatches(this,'upcoming')">Upcoming</button>
+        <button class="filter-btn" onclick="filterMatches(this,'ft')">Results</button>
+      </div>
     </div>
-
-    <!-- RESULTS SECTION -->
-    <div class="content section" id="results" data-section="results" style="display: none;">
-        <h1>RESULTS</h1>
-        <div class="container"><div class="loading"></div></div>
+    <div class="matches-grid" id="matchesGrid">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading matches…</p>
+      </div>
     </div>
+  </section>
 
-    <!-- STANDINGS SECTION -->
-    <div class="content section" id="standings" data-section="standings" style="display: none;">
-        <h1>STANDINGS</h1>
-        <div class="container"><div class="loading"></div></div>
+  <!-- ── STANDINGS PAGE ─────────────────────────────── -->
+  <section class="page" id="page-standings">
+    <div class="page-header">
+      <h2 class="page-title">League Stage Standings</h2>
+      <div class="standings-legend">
+        <span class="leg-dot knockout"></span>Top 8
+        <span class="leg-dot playoff"></span>Playoffs
+        <span class="leg-dot eliminated"></span>Eliminated
+      </div>
     </div>
+    <div id="standingsContainer">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading standings…</p>
+      </div>
+    </div>
+  </section>
 
-    <footer class="footer">
-        <div class="footer-inner">
-            <div class="footer-brand">
-                <img src="images/ipl.png" alt="IPL Logo"/>
-                <h2>IPLSCORES</h2>
-                <p>Your go-to destination for real-time IPL match scores and standings.</p>
-            </div>
-            <div class="footer-col">
-                <h3>Navigate</h3>
-                <a href="#matches" class="footer-link" data-section="matches">Matches</a>
-                <a href="#results" class="footer-link" data-section="results">Results</a>
-                <a href="#standings" class="footer-link" data-section="standings">Standings</a>
-            </div>
-            <div class="footer-col">
-                <h3>Credits</h3>
-                <div class="footer-social-icons">
-                    <a href="https://www.facebook.com/sumit.bati.1" target="_blank" class="social-badge"><i class="fab fa-facebook-f"></i></a>
-                    <a href="https://www.instagram.com/sumitbati81" target="_blank" class="social-badge"><i class="fab  fa-instagram"></i></a>
-                    <a href="https://github.com/T1TANistheGOD" target="_blank" class="social-badge"><i class="fa-brands fa-github"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Copyright © IPL 2026 All Rights Reserved &middot; Data provided by LiveScore API</p>
-        </div>
-    </footer>
+  <!-- ── TEAMS PAGE ─────────────────────────────────── -->
+  <section class="page" id="page-teams">
+    <div class="page-header">
+      <h2 class="page-title">Participating Clubs</h2>
+    </div>
+    <div class="teams-grid" id="teamsGrid">
+      <div class="loading-state"><div class="spinner"></div><p>Loading teams…</p></div>
+    </div>
+  </section>
 
-    <script src="https://kit.fontawesome.com/406561f65a.js" crossorigin="anonymous"></script>
+</main>
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════════ -->
+<footer class="site-footer">
+  <img class="footer-wave" src="images/footer-wave.svg" alt="" aria-hidden="true" />
+  <div class="footer-top">
+    <div class="footer-brand">
+      <img class="footer-logo-star" src="images/ucl1.svg" alt="UCL emblem" />
+      <div>
+        <div class="footer-brand-name">Champions League</div>
+        <div class="footer-brand-sub">The official competition of Europe's elite clubs</div>
+      </div>
+    </div>
+    <div class="footer-nav-cols">
+      <div class="footer-col">
+        <div class="footer-col-title">Competition</div>
+        <a href="#" onclick="navigateTo(event,'matches')">Matches</a>
+        <a href="#" onclick="navigateTo(event,'standings')">Standings</a>
+        <a href="#" onclick="navigateTo(event,'teams')">Teams</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Follow</div>
+        <a href="#">Instagram</a>
+        <a href="#">X (Twitter)</a>
+        <a href="#">Facebook</a>
+        <a href="#">YouTube</a>
+        <a href="#">TikTok</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-bottom-inner">
+      <span>© 2026 Champions League</span>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
