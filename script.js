@@ -1,707 +1,791 @@
-'use strict';
-
-const API_KEY = '644c313eb1msh54941d04889366cp18e9f9jsn5ba62ab2afde';
-const API_HOST = 'livescore6.p.rapidapi.com';
-
-const ENDPOINTS = {
-  matches: 'https://livescore6.p.rapidapi.com/matches/v2/list-by-league?Category=soccer&Ccd=champions-league&Timezone=5.75',
-  standings: 'https://livescore6.p.rapidapi.com/leagues/v2/get-table?Category=soccer&Ccd=champions-league&Scd=league-stage',
+// Team images
+const images = {
+  "Chennai Super Kings": 'images/CSK.jpg',
+  "Royal Challengers Bengaluru": 'images/RCB.jpg',
+  "Punjab Kings": 'images/PBKS.jpg',
+  "Delhi Capitals": 'images/DC.jpg',
+  "Kolkata Knight Riders": 'images/KKR.jpg',
+  "Sunrisers Hyderabad": 'images/SRH.jpg',
+  "Rajasthan Royals": 'images/RR.jpg',
+  "Lucknow Super Giants": 'images/LSG.jpg',
+  "Gujarat Titans": 'images/GT.jpg',
+  "Mumbai Indians": 'images/MI.jpg',
 };
 
-const HEADERS = {
-  'x-rapidapi-key': API_KEY,
-  'x-rapidapi-host': API_HOST,
-  'Content-Type': 'application/json',
+const teamCodes = {
+    "Chennai Super Kings": "CSK",
+    "Royal Challengers Bengaluru": "RCB",
+    "Punjab Kings": "PBKS",
+    "Delhi Capitals": "DC",
+    "Kolkata Knight Riders": "KKR",
+    "Sunrisers Hyderabad": "SRH",
+    "Rajasthan Royals": "RR",
+    "Lucknow Super Giants": "LSG",
+    "Gujarat Titans": "GT",
+    "Mumbai Indians": "MI"
 };
 
-const state = {
-  currentPage: 'matches',
-  matchFilter: 'all',
-  matches: [],
-  standings: [],
-  loaded: { matches: false, standings: false },
+let allMatchesData = [];
+let standingsData = [];
+
+const RAPID_API_HOST = 'livescore6.p.rapidapi.com';
+const RAPID_API_KEY = '644c313eb1msh54941d04889366cp18e9f9jsn5ba62ab2afde';
+
+// ════════════════════════════════════════════════════════════
+// FETCH AND INITIALIZE DATA
+// ════════════════════════════════════════════════════════════
+
+const fetchLiveScores = async () => {
+    const url = 'https://livescore6.p.rapidapi.com/matches/v2/list-by-league?Category=cricket&Ccd=india&Scd=ipl&Timezone=5.75';
+    const options = {
+        method: 'GET',
+        headers: {
+                    'x-rapidapi-key': RAPID_API_KEY,
+                    'x-rapidapi-host': RAPID_API_HOST
+      }
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const result = await response.json();
+        
+        // Store matches data
+        allMatchesData = result.Stages[0]?.Events || [];
+        console.log(allMatchesData);
+        // Store standings data
+        standingsData = result.Stages[0]?.LeagueTable?.L?.[0]?.Tables?.[0]?.team || [];
+        
+        // Render active section on load
+        const activeSection = document.querySelector('.nav-link.active')?.dataset.section || 'matches';
+        renderSection(activeSection);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
 };
 
-const TEAM_LOGO_MAP = {
-  ajax: 'images/ajax.png',
-  arsenal: 'images/arsenal.png',
-  athletic: 'images/athletic.png',
-  atalanta: 'images/atalanta.png',
-  atleti: 'images/atleti.png',
-  'atletico madrid': 'images/atleti.png',
-  barcelona: 'images/barcelona.png',
-  'bayern munich': 'images/bayernmunich.png',
-  bayern: 'images/bayernmunich.png',
-  benfica: 'images/benfica.png',
-  'bodo glimt': 'images/bodo.png',
-  bodo: 'images/bodo.png',
-  brugge: 'images/brugge.png',
-  celtic: 'images/celtic.png',
-  chelsea: 'images/chelsea.png',
-  copenhagen: 'images/copenhagen.png',
-  dortmund: 'images/dortmund.png',
-  frankfurt: 'images/frankfurt.png',
-  galatasaray: 'images/galatasaray.png',
-  inter: 'images/inter.png',
-  juventus: 'images/juventus.png',
-  leverkusen: 'images/leverkusen.png',
-  liverpool: 'images/liverpool.png',
-  'man city': 'images/mancity.png',
-  'manchester city': 'images/mancity.png',
-  marseille: 'images/marseille.png',
-  monaco: 'images/monaco.png',
-  napoli: 'images/napoli.png',
-  newcastle: 'images/newcastle.png',
-  olympiacos: 'images/olympiacos.png',
-  'paris sg': 'images/PSG.png',
-  'paris saint-germain': 'images/PSG.png',
-  'paris saint germain': 'images/PSG.png',
-  psg: 'images/PSG.png',
-  'real madrid': 'images/realmadrid.png',
-  slavia: 'images/slavia.png',
-  sporting: 'images/sporting.png',
-  psv: 'images/psv.png',
-  villarreal: 'images/villarreal.png',
-};
-
-const TEAM_COUNTRY_MAP = {
-  ajax: 'Netherlands',
-  arsenal: 'England',
-  athletic: 'Spain',
-  atalanta: 'Italy',
-  atleti: 'Spain',
-  'atletico madrid': 'Spain',
-  barcelona: 'Spain',
-  'bayern munich': 'Germany',
-  bayern: 'Germany',
-  benfica: 'Portugal',
-  'bodo glimt': 'Norway',
-  bodo: 'Norway',
-  brugge: 'Belgium',
-  celtic: 'Scotland',
-  chelsea: 'England',
-  copenhagen: 'Denmark',
-  dortmund: 'Germany',
-  frankfurt: 'Germany',
-  galatasaray: 'Turkey',
-  inter: 'Italy',
-  juventus: 'Italy',
-  leverkusen: 'Germany',
-  liverpool: 'England',
-  'man city': 'England',
-  'manchester city': 'England',
-  marseille: 'France',
-  monaco: 'France',
-  napoli: 'Italy',
-  newcastle: 'England',
-  olympiacos: 'Greece',
-  'paris sg': 'France',
-  'paris saint-germain': 'France',
-  'paris saint germain': 'France',
-  psg: 'France',
-  'real madrid': 'Spain',
-  slavia: 'Czech Republic',
-  sporting: 'Portugal',
-  psv: 'Netherlands',
-  villarreal: 'Spain',
-};
-
-function navigateTo(event, page) {
-  if (event) event.preventDefault();
-
-  document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
-  document.querySelectorAll('.nav-link').forEach((n) => n.classList.remove('active'));
-
-  const pageEl = document.getElementById(`page-${page}`);
-  const navEl = document.querySelector(`[data-page="${page}"]`);
-
-  if (pageEl) pageEl.classList.add('active');
-  if (navEl) navEl.classList.add('active');
-
-  state.currentPage = page;
-  document.getElementById('navLinks').classList.remove('open');
-
-  if (page === 'matches' && !state.loaded.matches) loadMatches();
-  if (page === 'standings' && !state.loaded.standings) loadStandings();
-  if (page === 'teams') renderTeams();
+// ════════════════════════════════════════════════════════════
+// SECTION SWITCHING AND NAV MANAGEMENT
+// ════════════════════════════════════════════════════════════
+function setActiveNav(sectionName) {
+    // Remove active class from all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Add active class to clicked link
+    document.querySelector(`.nav-link[data-section="${sectionName}"]`)?.classList.add('active');
 }
 
-function toggleMobileMenu() {
-  const links = document.getElementById('navLinks');
-  if (links) links.classList.toggle('open');
-}
-
-window.addEventListener('scroll', () => {
-  const nav = document.getElementById('navbar');
-  if (nav) nav.classList.toggle('scrolled', window.scrollY > 10);
-});
-
-async function apiFetch(url) {
-  const response = await fetch(url, { method: 'GET', headers: HEADERS });
-  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  return response.json();
-}
-
-async function loadMatches() {
-  const grid = document.getElementById('matchesGrid');
-  grid.innerHTML = loadingHTML();
-
-  try {
-    const data = await apiFetch(ENDPOINTS.matches);
-    state.matches = parseMatches(data);
-    state.loaded.matches = true;
-    renderMatchCards();
-    renderTeams();
-  } catch (err) {
-    console.error('Matches fetch error:', err);
-    grid.innerHTML = errorHTML('Could not load matches', err.message);
-  }
-}
-
-function parseMatches(data) {
-  const stages = data?.Stages || data?.stages || [];
-  const matches = [];
-
-  for (const stage of stages) {
-    const stageName = stage?.Snm || stage?.name || '';
-    if (isQualificationStage(stageName)) continue;
-
-    const events = stage?.Events || stage?.events || [];
-
-    for (const ev of events) {
-      const home = ev?.T1?.[0] || {};
-      const away = ev?.T2?.[0] || {};
-      const dateInfo = parseDateInfo(ev?.Esd || '');
-
-      matches.push({
-        id: ev?.Eid || `${stageName}-${Math.random()}`,
-        home: home?.Nm || home?.name || 'TBD',
-        away: away?.Nm || away?.name || 'TBD',
-        homeLogo: home?.Img || null,
-        awayLogo: away?.Img || null,
-        homeCountry: home?.Cnm || home?.country || null,
-        awayCountry: away?.Cnm || away?.country || null,
-        score1: hasNumeric(ev?.Tr1) ? Number(ev.Tr1) : null,
-        score2: hasNumeric(ev?.Tr2) ? Number(ev.Tr2) : null,
-        status: normalizeStatus(ev?.Eps || ev?.Epr || ev?.Esm || ''),
-        dateLabel: dateInfo.label,
-        dateSort: dateInfo.sort,
-        timeLabel: dateInfo.time,
-        roundLabel: detectRoundFromErnInf(ev?.ErnInf, stageName),
-        aggregate: parseAggregate(ev),
-      });
+function showSection(sectionName) {
+    // Hide all sections
+    document.querySelectorAll('.section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show selected section
+    const selectedSection = document.getElementById(sectionName);
+    if (selectedSection) {
+        selectedSection.style.display = 'flex';
     }
-  }
-
-  matches.sort((a, b) => b.dateSort.localeCompare(a.dateSort));
-  return matches;
 }
 
-function hasNumeric(value) {
-  return value !== undefined && value !== null && value !== '' && !Number.isNaN(Number(value));
+function renderSection(sectionName) {
+    setActiveNav(sectionName);
+    showSection(sectionName);
+    
+    if (sectionName === 'matches') {
+        renderUpcomingMatches();
+    } else if (sectionName === 'results') {
+        renderCompletedMatches();
+    } else if (sectionName === 'standings') {
+        renderStandingsSection();
+    }
 }
 
-function isQualificationStage(name) {
-  const n = String(name || '').toLowerCase();
-  return ['qualification', 'qualifying', 'preliminary', 'play-off', 'playoff'].some((k) => n.includes(k));
+function initHomePage() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = link.dataset.section;
+            if (!section) return;
+            renderSection(section);
+        });
+    });
+
+    document.querySelectorAll('.footer-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = link.dataset.section;
+            if (!section) return;
+            renderSection(section);
+            window.scrollTo(0, 0);
+        });
+    });
+
+    fetchLiveScores();
 }
 
-function normalizeStatus(rawStatus) {
-  const status = String(rawStatus || '').toLowerCase().trim();
+// ════════════════════════════════════════════════════════════
+// MATCH FILTERING
+// ════════════════════════════════════════════════════════════
 
-  if (['ft', 'finished', 'full time', 'aet', 'pens'].some((k) => status.includes(k))) return 'ft';
-  if (['live', '1h', '2h', 'ht'].some((k) => status === k || status.includes(` ${k}`))) return 'live';
-  if (['postp', 'postponed', 'abandoned', 'cancelled', 'canc'].some((k) => status.includes(k))) return 'postponed';
+function isMatchCompleted(match) {
+    const eps = String(match?.Eps || '').toLowerCase();
+    const epsLong = String(match?.EpsL || '').toLowerCase();
+    const status = (match.ECo || '').toLowerCase();
 
-  return 'upcoming';
-}
-
-function parseDateInfo(ts) {
-  const raw = String(ts || '');
-  if (!raw) return { label: 'Date TBD', sort: '', time: '' };
-
-  try {
-    if (raw.length >= 12) {
-      const y = raw.slice(0, 4);
-      const m = raw.slice(4, 6);
-      const d = raw.slice(6, 8);
-      const hh = raw.slice(8, 10);
-      const mm = raw.slice(10, 12);
-      const date = new Date(`${y}-${m}-${d}T${hh}:${mm}:00`);
-
-      return {
-        label: date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
-        sort: `${y}${m}${d}${hh}${mm}`,
-        time: `${hh}:${mm}`,
-      };
+    if (eps === 'ft' || epsLong.includes('finished') || epsLong.includes('completed')) {
+        return true;
     }
 
-    if (raw.length >= 8) {
-      const y = raw.slice(0, 4);
-      const m = raw.slice(4, 6);
-      const d = raw.slice(6, 8);
-      const date = new Date(`${y}-${m}-${d}`);
-
-      return {
-        label: date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
-        sort: `${y}${m}${d}0000`,
-        time: '',
-      };
-    }
-  } catch {
-    return { label: 'Date TBD', sort: '', time: '' };
-  }
-
-  return { label: 'Date TBD', sort: '', time: '' };
+    return [
+        'ended',
+        'finished',
+        'won by',
+        'beat',
+        'tied',
+        'draw',
+        'abandoned',
+        'no result',
+        'cancelled'
+    ].some((marker) => status.includes(marker));
 }
 
-function detectRoundFromErnInf(ernInf, fallback) {
-  const raw = String(ernInf || fallback || '').trim();
-  if (!raw) return 'Champions League';
-
-  const lower = raw.toLowerCase();
-  const fallbackLower = String(fallback || '').toLowerCase();
-
-  // The feed sometimes returns just "8" for league-stage matchday metadata.
-  if (/^\d+$/.test(lower)) {
-    if (fallbackLower.includes('league stage')) return 'League Stage';
-    return `Matchday ${lower}`;
-  }
-
-  if (lower.includes('league stage')) return 'League Stage';
-  if (lower.includes('group')) return 'Group Stage';
-
-  if (lower.includes('1/8') || lower.includes('round of 16') || lower.includes('last 16') || lower.includes('r16')) return 'Round Of 16';
-  if (lower.includes('1/4') || lower.includes('quarter')) return 'Quarter Finals';
-  if (lower.includes('1/2') || lower.includes('semi')) return 'Semi Finals';
-  if (lower === 'final' || lower === 'finals' || lower.endsWith(' final') || lower.endsWith(' finals')) return 'Finals';
-  if (lower.includes('play-off') || lower.includes('playoff')) return 'Play-offs';
-  if (lower.includes('league')) return 'League Stage';
-
-  return fallback && String(fallback).trim() ? String(fallback).trim() : raw;
+function getUpcomingMatches(matches) {
+    return matches.filter(match => !isMatchCompleted(match));
 }
 
-function parseAggregate(event) {
-  const seriesInfo = firstVal(event?.SeriesInfo, event?.seriesInfo, event?.Si, event?.Sif, null);
-
-  if (seriesInfo && typeof seriesInfo === 'object') {
-    const leg = firstVal(seriesInfo?.currentLeg, seriesInfo?.CurrentLeg, null);
-    const totalLegs = firstVal(seriesInfo?.totalLegs, seriesInfo?.TotalLegs, null);
-    const aggTeam1 = firstVal(seriesInfo?.aggScoreTeam1, seriesInfo?.AggScoreTeam1, seriesInfo?.aggScore1, seriesInfo?.AggScore1, null);
-    const aggTeam2 = firstVal(seriesInfo?.aggScoreTeam2, seriesInfo?.AggScoreTeam2, seriesInfo?.aggScore2, seriesInfo?.AggScore2, null);
-
-    if (hasNumeric(aggTeam1) && hasNumeric(aggTeam2)) {
-      const legText = hasNumeric(leg) && hasNumeric(totalLegs)
-        ? ` (${Number(leg)}/${Number(totalLegs)})`
-        : '';
-      return `Agg: ${Number(aggTeam1)}-${Number(aggTeam2)}`;
-    }
-  }
-
-  if (typeof seriesInfo === 'string' && seriesInfo.trim()) {
-    return seriesInfo.trim();
-  }
-
-  const aggScoreTeam1 = firstVal(event?.aggScoreTeam1, event?.AggScoreTeam1, event?.aggScore1, event?.AggScore1);
-  const aggScoreTeam2 = firstVal(event?.aggScoreTeam2, event?.AggScoreTeam2, event?.aggScore2, event?.AggScore2);
-  if (hasNumeric(aggScoreTeam1) && hasNumeric(aggScoreTeam2)) {
-    return `Agg: ${Number(aggScoreTeam1)}-${Number(aggScoreTeam2)}`;
-  }
-
-  const values = [
-    event?.aggScore,
-    event?.Etx,
-    event?.Es,
-  ];
-  const found = values.find((v) => {
-    if (typeof v !== 'string') return false;
-    const s = v.toLowerCase();
-    return s.includes('agg') || s.includes('series');
-  });
-  return found || '';
+function getCompletedMatches(matches) {
+    return matches.filter(match => isMatchCompleted(match));
 }
 
-function filterMatches(button, filter) {
-  document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
-  button.classList.add('active');
-  state.matchFilter = filter;
-  renderMatchCards();
-}
-
-function getFilteredMatches() {
-  if (state.matchFilter === 'all') return state.matches;
-  return state.matches.filter((m) => m.status === state.matchFilter);
-}
-
-function renderMatchCards() {
-  const grid = document.getElementById('matchesGrid');
-  const matches = getFilteredMatches();
-
-  if (!matches.length) {
-    grid.innerHTML = errorHTML('No matches found', 'No fixtures or results in this category yet.');
-    return;
-  }
-
-  const grouped = groupMatchesByStageAndDate(matches);
-  grid.innerHTML = grouped.map((group) => stageGroupHTML(group)).join('');
-}
-
-function groupMatchesByStageAndDate(matches) {
-  const stageMap = new Map();
-
-  for (const match of matches) {
-    const stage = match.roundLabel || 'Champions League';
-    if (!stageMap.has(stage)) {
-      stageMap.set(stage, {
-        stage,
-        dates: new Map(),
-      });
+function getMatchSortValue(match) {
+    const raw = String(match?.Esd || '').trim();
+    if (/^\d{14}$/.test(raw)) {
+        return Number(raw);
     }
 
-    const stageBucket = stageMap.get(stage);
-    const dateKey = match.dateSort ? match.dateSort.slice(0, 8) : 'tbd';
-    if (!stageBucket.dates.has(dateKey)) {
-      stageBucket.dates.set(dateKey, {
-        dateKey,
-        dateLabel: match.dateLabel,
-        matches: [],
-      });
+    const asDate = new Date(raw);
+    return Number.isNaN(asDate.getTime()) ? 0 : asDate.getTime();
+}
+
+function buildMatchDetailsUrl(game) {
+    if (!game?.Eid) {
+        return '#';
     }
 
-    stageBucket.dates.get(dateKey).matches.push(match);
-  }
+    const params = new URLSearchParams({
+        eid: String(game.Eid),
+        title: String(game.ErnInf || 'IPL Match'),
+        t1: String(game?.T1?.[0]?.Nm || 'Team 1'),
+        t2: String(game?.T2?.[0]?.Nm || 'Team 2'),
+        date: formatMatchDateTime(game.Esd),
+        status: formatMatchStatus(game.ECo),
+        t1s: game.Tr1C1 !== undefined ? String(game.Tr1C1) : '-',
+        t1w: game.Tr1CW1 !== undefined ? String(game.Tr1CW1) : '-',
+        t1o: game.Tr1CO1 !== undefined ? String(game.Tr1CO1) : '-',
+        t2s: game.Tr2C1 !== undefined ? String(game.Tr2C1) : '-',
+        t2w: game.Tr2CW1 !== undefined ? String(game.Tr2CW1) : '-',
+        t2o: game.Tr2CO1 !== undefined ? String(game.Tr2CO1) : '-',
+        t1img: String(images[game?.T1?.[0]?.Nm] || ''),
+        t2img: String(images[game?.T2?.[0]?.Nm] || ''),
+        venue: String(game?.Vnm || game?.Ven || game?.Venue || 'Venue TBA')
+    });
 
-  const stagePriority = {
-    Finals: 6,
-    'Semi Finals': 5,
-    'Quarter Finals': 4,
-    'Round Of 16': 3,
-    'League Stage': 2,
-    'Group Stage': 1,
-    'Play-offs': 0,
-  };
+    return `match.html?${params.toString()}`;
+}
 
-  const ordered = [...stageMap.values()].sort((a, b) => {
-    const p = (stagePriority[b.stage] || -1) - (stagePriority[a.stage] || -1);
-    if (p !== 0) return p;
-    return a.stage.localeCompare(b.stage);
-  });
+function formatMatchStatus(statusText) {
+    const status = String(statusText || '').trim();
+    const normalized = status.toLowerCase();
 
-  for (const stageGroup of ordered) {
-    stageGroup.dates = [...stageGroup.dates.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-    for (const dateGroup of stageGroup.dates) {
-      dateGroup.matches.sort((a, b) => b.dateSort.localeCompare(a.dateSort));
+    if (
+        normalized.includes('teams will be announced at the toss') ||
+        normalized.includes('teams will be announced at toss')
+    ) {
+        return 'Match not started';
     }
-  }
 
-  return ordered;
+    return status || 'Status unavailable';
 }
 
-function stageGroupHTML(group) {
-  const datesHTML = group.dates
-    .map((dateGroup) => `
-      <section class="match-date-group">
-        <header class="match-group-head">
-          <h3 class="match-group-date">${dateGroup.dateLabel}</h3>
-        </header>
-        <div class="match-group-list">
-          ${dateGroup.matches.map((match) => matchCardHTML(match)).join('')}
-        </div>
-      </section>`)
-    .join('');
+// ════════════════════════════════════════════════════════════
+// DATE/TIME FORMATTING
+// ════════════════════════════════════════════════════════════
 
-  return `
-    <section class="match-stage-group">
-      <h3 class="match-stage-title">${group.stage}</h3>
-      <div class="match-stage-content">
-        ${datesHTML}
-      </div>
-    </section>`;
+function formatMatchDateTime(timestampStr) {
+    if (!timestampStr) return 'TBA';
+    
+    try {
+        const raw = String(timestampStr).trim();
+
+        // API format: YYYYMMDDHHmmss (example: 20260328201500)
+        if (/^\d{14}$/.test(raw)) {
+            const monthIndex = parseInt(raw.slice(4, 6), 10) - 1;
+            const day = parseInt(raw.slice(6, 8), 10);
+            const hour24 = parseInt(raw.slice(8, 10), 10);
+            const minute = parseInt(raw.slice(10, 12), 10);
+
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthAbbr = months[monthIndex] || 'TBA';
+
+            const suffix = hour24 >= 12 ? 'PM' : 'AM';
+            const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+            const minutePadded = String(minute).padStart(2, '0');
+
+            return `${monthAbbr} ${day} | ${hour12}:${minutePadded} ${suffix}`;
+        }
+
+        // Fallback for any non-standard date values
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return 'TBA';
+
+        const monthAbbr = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        return `${monthAbbr} ${day} | ${time}`;
+    } catch (error) {
+        console.error('Date formatting error:', error);
+        return 'TBA';
+    }
 }
 
-function matchCardHTML(match) {
-  const hasScore = match.score1 !== null && match.score2 !== null;
-  const score = hasScore
-    ? `<div class="score-line">${match.score1}<span class="score-sep">:</span>${match.score2}</div>`
-    : '<div class="score-line no-score">-<span class="score-sep">:</span>-</div>';
+// ════════════════════════════════════════════════════════════
+// RENDER MATCHES (UPCOMING)
+// ════════════════════════════════════════════════════════════
 
-  const statusLabel =
-    match.status === 'ft' ? 'Full time' :
-    match.status === 'postponed' ? 'Postponed' :
-    match.status === 'live' ? 'Live' :
-    'Upcoming';
-
-  const aggregate = match.aggregate ? `<div class="match-aggregate">${match.aggregate}</div>` : '';
-
-  return `
-    <article class="match-card">
-      <div class="team-side home">
-        ${crestHTML(match.homeLogo, match.home, 'team-crest')}
-        <div class="team-name">${match.home}</div>
-      </div>
-
-      <div class="score-center">
-        ${aggregate}
-        ${score}
-        <div class="match-status">${statusLabel}</div>
-      </div>
-
-      <div class="team-side away">
-        ${crestHTML(match.awayLogo, match.away, 'team-crest')}
-        <div class="team-name">${match.away}</div>
-      </div>
-    </article>`;
+function renderUpcomingMatches() {
+    const upcomingMatches = getUpcomingMatches(allMatchesData)
+        .sort((a, b) => getMatchSortValue(a) - getMatchSortValue(b));
+    const container = document.querySelector('#matches .container');
+    renderMatches(upcomingMatches, container);
 }
 
-async function loadStandings() {
-  const container = document.getElementById('standingsContainer');
-  container.innerHTML = loadingHTML();
-
-  try {
-    const data = await apiFetch(ENDPOINTS.standings);
-    state.standings = parseStandings(data);
-    state.loaded.standings = true;
-    renderStandingsTable();
-    renderTeams();
-  } catch (err) {
-    console.error('Standings fetch error:', err);
-    container.innerHTML = errorHTML('Could not load standings', err.message);
-  }
+function renderCompletedMatches() {
+    const completedMatches = getCompletedMatches(allMatchesData)
+        .sort((a, b) => getMatchSortValue(b) - getMatchSortValue(a));
+    const container = document.querySelector('#results .container');
+    renderMatches(completedMatches, container);
 }
 
-function parseStandings(data) {
-  const rows =
-    data?.LeagueTable?.L?.[0]?.Tables?.[0]?.team ||
-    data?.LeagueTable?.L?.[0]?.Tables?.[0]?.teams ||
-    [];
+function renderMatches(matches, element) {
+    if (!matches || matches.length === 0) {
+        element.innerHTML = '<div class="no-matches" style="text-align: center; padding: 2rem; color: rgba(29, 46, 113, 0.5);">No matches found</div>';
+        return;
+    }
 
-  if (!Array.isArray(rows)) return [];
-  return rows.map(parseStandingRow).filter((row) => row.name && !Number.isNaN(row.pos));
-}
+    let matchesEl = matches.map((game) => {
+        const id1 = game.T1[0].Nm; 
+        const id2 = game.T2[0].Nm;
 
-function parseStandingRow(row) {
-  const team = row?.team || row?.T || row;
+        const T1score = game.Tr1C1 !== undefined ? String(game.Tr1C1) : "-"; 
+        const T1wickets = game.Tr1CW1 !== undefined ? String(game.Tr1CW1) : "-"; 
+        const T1overs = game.Tr1CO1 !== undefined ? String(game.Tr1CO1) : "-"; 
+        const T2score = game.Tr2C1 !== undefined ? String(game.Tr2C1) : "-"; 
+        const T2wickets = game.Tr2CW1 !== undefined ? String(game.Tr2CW1) : "-"; 
+        const T2overs = game.Tr2CO1 !== undefined ? String(game.Tr2CO1) : "-";
+        
+        // Format match date/time
+        const matchDateTime = formatMatchDateTime(game.Esd);
+        const matchStatus = formatMatchStatus(game.ECo);
+                const detailsUrl = buildMatchDetailsUrl(game);
+                const canOpenDetails = detailsUrl !== '#';
 
-  const gf = Number(firstVal(row?.gf, row?.GF, row?.goalsFor, 0));
-  const ga = Number(firstVal(row?.ga, row?.GA, row?.goalsAgainst, 0));
-  const gdRaw = firstVal(row?.gd, row?.GD, row?.goalDifference, gf - ga);
-
-  return {
-    pos: Number(firstVal(row?.rnk, row?.Rnk, row?.rank, row?.position, 0)),
-    name: String(firstVal(team?.Tnm, team?.Nm, row?.Tnm, row?.name, 'Unknown')),
-    logo: firstVal(team?.Img, row?.Img, row?.logo, null),
-    country: String(firstVal(team?.Cnm, team?.Cn, row?.Cnm, row?.country, 'Unknown')),
-    pld: Number(firstVal(row?.pld, row?.Pld, row?.pl, row?.Pl, row?.mp, row?.MP, row?.played, row?.Played, 0)),
-    won: Number(firstVal(row?.win, row?.Win, row?.won, row?.W, 0)),
-    lost: Number(firstVal(row?.lst, row?.Lst, row?.lost, row?.L, 0)),
-    drawn: Number(firstVal(row?.drw, row?.Drw, row?.drawn, row?.D, 0)),
-    gf,
-    gd: Number(gdRaw),
-    ga,
-    ptsn: Number(firstVal(row?.ptsn, row?.Ptsn, row?.pts, row?.Pts, row?.P, 0)),
-  };
-}
-
-function firstVal(...values) {
-  for (const value of values) {
-    if (value !== undefined && value !== null && value !== '') return value;
-  }
-  return null;
-}
-
-function renderStandingsTable() {
-  const container = document.getElementById('standingsContainer');
-  const rows = [...state.standings];
-
-  if (!rows.length) {
-    container.innerHTML = errorHTML('No standings data', 'Standings feed has no team rows right now.');
-    return;
-  }
-
-  rows.sort((a, b) => a.pos - b.pos || b.ptsn - a.ptsn);
-
-  const body = rows
-    .map((row, index) => {
-      const position = row.pos || index + 1;
-      const zoneClass = position <= 8 ? 'knockout' : position <= 24 ? 'playoff' : 'eliminated';
-      const gdClass = row.gd > 0 ? 'pos' : row.gd < 0 ? 'neg' : '';
-      const gdValue = row.gd > 0 ? `+${row.gd}` : `${row.gd}`;
-
-      return `
-        <tr>
-          <td><span class="pos-num ${zoneClass}">${position}</span></td>
-          <td>
-            <div class="st-team-cell">
-              ${crestHTML(row.logo, row.name, 'st-crest')}
-              <span class="st-name">${row.name}</span>
+        return `
+          <div class="box">
+            <div class="matchinfo">
+              <div class="mno">${game.ErnInf}</div>
+              <div class="match-datetime">${matchDateTime}</div>
             </div>
-          </td>
-          <td class="td-pld">${row.pld || row.won + row.lost + row.drawn}</td>
-          <td>${row.won}</td>
-          <td>${row.lost}</td>
-          <td>${row.drawn}</td>
-          <td>${row.gf}</td>
-          <td class="td-gd ${gdClass}">${gdValue}</td>
-          <td>${row.ga}</td>
-          <td class="td-pts">${row.ptsn}</td>
-        </tr>`;
-    })
-    .join('');
+            <div class="matchscore">
+              <div class="team team-left">
+                <img src="${images[id1]}" alt="${id1}"/>
+                <div class="team-info team-info-left">
+                  <div class="tname">${id1}</div>
+                  <div class="tscore">
+                    <div class="mains">${T1score}/${T1wickets}</div>
+                    <div class="overs">${T1overs !== '-' ? T1overs + ' ov' : '-'}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="vs-badge">VS</div>
+              <div class="team team-right">
+                <div class="team-info team-info-right">
+                  <div class="tname">${id2}</div>
+                  <div class="tscore">
+                    <div class="mains">${T2score}/${T2wickets}</div>
+                    <div class="overs">${T2overs !== '-' ? T2overs + ' ov' : '-'}</div>
+                  </div>
+                </div>
+                <img src="${images[id2]}" alt="${id2}"/>
+              </div>
+            </div>
+                        <div class="box-footer">
+                            <div class="state">${matchStatus}</div>
+                            <a class="match-info-btn${canOpenDetails ? '' : ' disabled'}" href="${detailsUrl}" title="View Match Details" aria-label="View Match Details"><span class="cricket-icon" aria-hidden="true"></span></a>
+                        </div>
+          </div>`
+    }).join('');
 
-  container.innerHTML = `
-    <div class="standings-shell">
-      <table class="standings-table">
+    element.innerHTML = `<div class="matchcont">${matchesEl}</div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER STANDINGS
+// ════════════════════════════════════════════════════════════
+
+function renderStandingsSection() {
+    const container = document.querySelector('#standings .container');
+    renderStandings(standingsData, container);
+}
+
+function renderStandings(standings, element) {
+    if (!standings || standings.length === 0) {
+        element.innerHTML = '<div class="no-matches" style="text-align: center; padding: 2rem; color: rgba(29, 46, 113, 0.5);">No standings data available</div>';
+        return;
+    }
+
+    let standingEl = standings.map((row) => {
+        const id = row.Tnm;
+        const rankNum = parseInt(row.rnk);
+        const isQualifier = rankNum <= 4;
+
+        return `
+            <tr class="${isQualifier ? 'qualifier-row' : ''}">
+                <td><span class="rank-badge ${isQualifier ? 'rank-qualifier' : ''}">${row.rnk}</span></td>
+                <td><div class="tian"><img src="${images[id]}"/>${row.Tnm}</div></td>
+                <td>${row.pld}</td>
+                <td>${row.win}</td>
+                <td>${row.lst}</td>
+                <td><strong>${row.pts}</strong></td>
+                <td>${row.nrr}</td>
+            </tr>
+        `;
+    }).join('');
+
+    element.innerHTML = `
+    <div class="standing-container">
+        <table class="standings-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Team</th>
+                    <th>M</th>
+                    <th>W</th>
+                    <th>L</th>
+                    <th>Pts</th>
+                    <th>NRR</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${standingEl}
+            </tbody>
+        </table>
+    </div>
+    <div class="qualifier-legend">
+        <span class="qualifier-legend-dot"></span>
+        Playoff qualification zone (Top 4)
+    </div>
+    `;
+}
+
+// ════════════════════════════════════════════════════════════
+// MATCH DETAILS PAGE
+// ════════════════════════════════════════════════════════════
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function setImage(id, src, alt) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    if (src) {
+        el.src = src;
+        el.alt = alt || 'Team';
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+function sanitizeText(value, fallback = '-') {
+    const text = String(value ?? '').trim();
+    return text || fallback;
+}
+
+function formatScore(score, wickets) {
+    const sc = sanitizeText(score, '-');
+    const wk = sanitizeText(wickets, '-');
+    return `${sc}/${wk}`;
+}
+
+function formatOvers(value) {
+    const overs = sanitizeText(value, '-');
+    return overs === '-' ? '-' : `${overs} ov`;
+}
+
+function parseMatchContext() {
+    const query = new URLSearchParams(window.location.search);
+    return {
+        eid: sanitizeText(query.get('eid'), ''),
+        title: sanitizeText(query.get('title'), 'IPL Match'),
+        t1: sanitizeText(query.get('t1'), 'Team 1'),
+        t2: sanitizeText(query.get('t2'), 'Team 2'),
+        date: sanitizeText(query.get('date'), 'Date unavailable'),
+        status: sanitizeText(query.get('status'), 'Status unavailable'),
+        t1s: sanitizeText(query.get('t1s'), '-'),
+        t1w: sanitizeText(query.get('t1w'), '-'),
+        t1o: sanitizeText(query.get('t1o'), '-'),
+        t2s: sanitizeText(query.get('t2s'), '-'),
+        t2w: sanitizeText(query.get('t2w'), '-'),
+        t2o: sanitizeText(query.get('t2o'), '-'),
+        t1img: sanitizeText(query.get('t1img'), ''),
+        t2img: sanitizeText(query.get('t2img'), ''),
+        venue: sanitizeText(query.get('venue'), 'Venue TBA'),
+    };
+}
+
+function getTeamCode(teamName) {
+    return teamCodes[teamName] || String(teamName || 'TEAM').split(' ').map((word) => word.charAt(0)).join('').slice(0, 4).toUpperCase();
+}
+
+function buildPlayerMap(prns) {
+    const map = new Map();
+    if (!Array.isArray(prns)) return map;
+
+    prns.forEach((player) => {
+        const pid = Number(player?.Pid);
+        if (!Number.isFinite(pid)) return;
+
+        const first = String(player?.Fn || '').trim();
+        const last = String(player?.Ln || '').trim();
+        const short = String(player?.Snm || '').trim();
+        const fullName = `${first} ${last}`.trim() || short || `Player ${pid}`;
+        map.set(pid, fullName);
+    });
+
+    return map;
+}
+
+function getPlayerName(playerMap, pid) {
+    const numericPid = Number(pid);
+    return playerMap.get(numericPid) || `Player ${pid}`;
+}
+
+function formatDismissalText(rawText, batter, playerMap) {
+    const text = sanitizeText(rawText, '').replace(/\s+/g, ' ').trim();
+    if (!text) return 'not out';
+
+    const hasFielderToken = text.includes('[F]');
+    const hasBowlerToken = text.includes('[B]');
+    const fielder = hasFielderToken ? getPlayerName(playerMap, batter?.Fid) : '';
+    const bowler = hasBowlerToken ? getPlayerName(playerMap, batter?.Bid) : '';
+
+    return text
+        .replace(/\[F\]/g, fielder)
+        .replace(/\[B\]/g, bowler)
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function createBattingMarkup(innings, playerMap) {
+    const batters = Array.isArray(innings?.Bat) ? innings.Bat : [];
+    const battingRows = batters.filter((batter) => {
+        const status = String(batter?.LpTx || '').toLowerCase();
+        return !status.includes('did not bat') && !status.includes('yet to bat');
+    });
+    const yetToBat = batters.filter((batter) => {
+        const status = String(batter?.LpTx || '').toLowerCase();
+        return status.includes('did not bat') || status.includes('yet to bat');
+    });
+
+    if (!battingRows.length) {
+        return '<p class="section-title">No batting data available</p>';
+    }
+
+    const rows = battingRows.map((batter) => {
+        const name = getPlayerName(playerMap, batter.Pid);
+        const dismissal = formatDismissalText(batter.LpTx, batter, playerMap);
+
+        return `
+      <tr>
+                <td class="batsman-name">${name}</td>
+                <td>${dismissal}</td>
+                <td class="batsman-runs">${sanitizeText(batter.R, '0')}</td>
+        <td>${sanitizeText(batter.B, '0')}</td>
+        <td>${sanitizeText(batter.$4, '0')}</td>
+        <td>${sanitizeText(batter.$6, '0')}</td>
+        <td>${sanitizeText(batter.Sr, '0')}</td>
+      </tr>
+    `;
+    }).join('');
+
+        const extrasRow = `
+            <tr class="extras-row">
+                <td class="batsman-name">Extras</td>
+                <td>(NB ${sanitizeText(innings?.NB, '0')}, W ${sanitizeText(innings?.WB, '0')}, LB ${sanitizeText(innings?.LB, '0')}, B ${sanitizeText(innings?.B, '0')}, PEN ${sanitizeText(innings?.Pen, '0')})</td>
+                <td class="batsman-runs">${sanitizeText(innings?.Ex, '0')}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        `;
+
+    const yetToBatMarkup = yetToBat.length
+        ? `<p class="did-not-bat"><span class="info-title">Yet to Bat:</span><br> <span class="info-names">${yetToBat.map((player) => getPlayerName(playerMap, player.Pid)).join(', ')}</span></p>`
+        : '';
+
+    return `
+    <div class="table-scroll">
+      <table class="score-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Team</th>
-            <th>Played</th>
-            <th>W</th>
-            <th>L</th>
-            <th>D</th>
-            <th>GF</th>
-            <th>GD</th>
-            <th>GA</th>
-            <th>PTS</th>
+            <th>Batter</th>
+            <th>Dismissal</th>
+            <th>R</th>
+            <th>B</th>
+            <th>4s</th>
+            <th>6s</th>
+            <th>SR</th>
           </tr>
         </thead>
-        <tbody>${body}</tbody>
+                <tbody>${rows}${extrasRow}</tbody>
       </table>
-    </div>`;
+    </div>
+        ${yetToBatMarkup}
+  `;
 }
 
-function renderTeams() {
-  const grid = document.getElementById('teamsGrid');
-  const teams = buildTeamList();
+function createBowlingMarkup(innings, playerMap) {
+    const bowlers = Array.isArray(innings?.Bow) ? innings.Bow : [];
 
-  if (!teams.length) {
-    grid.innerHTML = loadingHTML('Team images will appear after fixtures or standings load.');
-    return;
-  }
+    if (!bowlers.length) {
+        return '<p class="section-title">No bowling data available</p>';
+    }
 
-  grid.innerHTML = teams
-    .map((team) => `
-      <article class="team-card">
-        <div class="team-card-crest-wrap">
-          ${crestHTML(team.logo, team.name, 'team-card-crest')}
+    const rows = bowlers.map((bowler) => {
+        const name = getPlayerName(playerMap, bowler.Pid);
+        return `
+      <tr>
+                <td class="bowler-name">${name}</td>
+        <td>${sanitizeText(bowler.Ov, '0')}</td>
+        <td>${sanitizeText(bowler.Md, '0')}</td>
+        <td>${sanitizeText(bowler.R, '0')}</td>
+        <td>${sanitizeText(bowler.Wk, '0')}</td>
+        <td>${sanitizeText(bowler.Er, '0')}</td>
+      </tr>
+    `;
+    }).join('');
+
+    return `
+    <div class="table-scroll">
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Bowler</th>
+            <th>O</th>
+            <th>M</th>
+            <th>R</th>
+            <th>W</th>
+            <th>Econ</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function createFallOfWicketsMarkup(innings, playerMap) {
+    const fow = Array.isArray(innings?.FoW) ? innings.FoW : [];
+    if (!fow.length) return '';
+
+    const text = fow
+        .map((item) => {
+            const playerName = getPlayerName(playerMap, item.Pid);
+            return `${sanitizeText(item.R, '0')}/${sanitizeText(item.WkN, '-')} (<span class="fow-name">${playerName}</span>, ${sanitizeText(item.B, '-')} ov)`;
+        })
+        .join(', ');
+
+    return `<p class="fall-of-wickets"><span class="info-title">Fall of wickets:</span><br> ${text}</p>`;
+}
+
+function createInningsPanel(innings, playerMap, context, index) {
+    const battingTeam = Number(innings?.Tn) === 2 ? context.t2 : context.t1;
+    const battingCode = getTeamCode(battingTeam);
+    const battingTeamImg = Number(innings?.Tn) === 2 ? context.t2img : context.t1img;
+    const score = `${sanitizeText(innings?.Pt, '0')}/${sanitizeText(innings?.Wk, '0')}`;
+    const overs = sanitizeText(innings?.Ov, '0');
+    const runRate = sanitizeText(innings?.Rr, '-');
+        const panelId = `panel-${index}`;
+
+    return `
+        <article class="innings-panel${index === 0 ? ' active' : ''}" data-panel="${panelId}">
+      <div class="innings-card">
+        <div class="innings-card-header">
+          <div class="innings-header-left">
+            <img src="${battingTeamImg}" alt="${battingTeam}" class="innings-team-logo" />
+            <div>
+              <h3>${battingCode} Innings</h3>
+              <p>${battingTeam}</p>
+            </div>
+          </div>
+          <div class="innings-header-right">
+            <h3>${score} (${overs} ov)</h3>
+            <p>Run Rate: ${runRate}</p>
+          </div>
         </div>
-        <h3 class="team-card-name">${team.name}</h3>
-        <p class="team-card-country">${team.country || resolveTeamCountry(team.name)}</p>
-      </article>`)
-    .join('');
+
+        <div class="innings-section">
+          ${createBattingMarkup(innings, playerMap)}
+        </div>
+
+        <div class="innings-section">
+          ${createFallOfWicketsMarkup(innings, playerMap)}
+        </div>
+
+        <div class="innings-section">
+          ${createBowlingMarkup(innings, playerMap)}
+        </div>
+       </div>
+      </div>
+    </article>
+  `;
 }
 
-function buildTeamList() {
-  const teamMap = new Map();
+function setupInningsTabs() {
+    const tabs = document.querySelectorAll('.innings-tab');
+    const panels = document.querySelectorAll('.innings-panel');
 
-  for (const match of state.matches) {
-    if (match.home && match.home !== 'TBD' && !teamMap.has(match.home)) {
-      teamMap.set(match.home, {
-        name: match.home,
-        logo: match.homeLogo,
-        country: match.homeCountry || resolveTeamCountry(match.home),
-      });
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.panel;
+
+            tabs.forEach((item) => item.classList.remove('active'));
+            tab.classList.add('active');
+
+            panels.forEach((panel) => {
+                panel.classList.toggle('active', panel.dataset.panel === target);
+            });
+        });
+    });
+}
+
+async function fetchInnings(eid) {
+    const url = `https://livescore6.p.rapidapi.com/matches/v2/get-innings?Category=cricket&Eid=${encodeURIComponent(eid)}`;
+    const options = {
+        method: 'GET',
+        headers: {
+            'x-rapidapi-key': RAPID_API_KEY,
+            'x-rapidapi-host': RAPID_API_HOST,
+            'Content-Type': 'application/json'
+        }
+    };
+
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
     }
-    if (match.away && match.away !== 'TBD' && !teamMap.has(match.away)) {
-      teamMap.set(match.away, {
-        name: match.away,
-        logo: match.awayLogo,
-        country: match.awayCountry || resolveTeamCountry(match.away),
-      });
+
+    return response.json();
+}
+
+function showMatchError(message) {
+    const errorWrap = document.getElementById('error-state');
+    const errorText = document.getElementById('error-text');
+    const loading = document.getElementById('loading-state');
+    const inningsRoot = document.getElementById('innings-root');
+    const tabsWrap = document.getElementById('innings-tabs');
+
+    if (loading) loading.hidden = true;
+    if (inningsRoot) inningsRoot.hidden = true;
+    if (tabsWrap) tabsWrap.hidden = true;
+
+    if (errorWrap) {
+        errorWrap.hidden = false;
+        if (errorText) errorText.textContent = message;
     }
-  }
+}
 
-  for (const team of state.standings) {
-    if (team.name && !teamMap.has(team.name)) {
-      teamMap.set(team.name, {
-        name: team.name,
-        logo: team.logo,
-        country: team.country || resolveTeamCountry(team.name),
-      });
+function setMatchHeader(context) {
+    setText('match-title', context.title);
+    setText('match-date', context.date);
+    setText('match-status', context.status);
+    setText('team-one-name', context.t1);
+    setText('team-two-name', context.t2);
+    setText('team-one-score', formatScore(context.t1s, context.t1w));
+    setText('team-two-score', formatScore(context.t2s, context.t2w));
+    setText('team-one-overs', formatOvers(context.t1o));
+    setText('team-two-overs', formatOvers(context.t2o));
+    setImage('team-one-logo', context.t1img, context.t1);
+    setImage('team-two-logo', context.t2img, context.t2);
+}
+
+async function initMatchPage() {
+    const context = parseMatchContext();
+    setMatchHeader(context);
+
+    if (!context.eid) {
+        showMatchError('Missing match EID. Open this page from a Match Info button.');
+        return;
     }
-  }
 
-  return [...teamMap.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
+    try {
+        const payload = await fetchInnings(context.eid);
+        const innings = Array.isArray(payload?.SDInn) ? payload.SDInn : [];
+        const playerMap = buildPlayerMap(payload?.Prns);
 
-function crestHTML(logoUrl, name, className) {
-  const safeName = name || 'Team';
-  const localLogo = resolveTeamLogo(safeName);
-  const src = localLogo || logoUrl;
+        const loading = document.getElementById('loading-state');
+        const inningsRoot = document.getElementById('innings-root');
+        const tabsWrap = document.getElementById('innings-tabs');
 
-  if (src) {
-    return `<div class="${className}"><img src="${src}" alt="${safeName}" onerror="this.parentNode.textContent='${abbrev(safeName)}'" /></div>`;
-  }
+        if (loading) loading.hidden = true;
+        if (loading) loading.remove();
 
-  return `<div class="${className}">${abbrev(safeName)}</div>`;
-}
+        if (!innings.length) {
+            showMatchError('No innings data available yet for this match.');
+            return;
+        }
 
-function resolveTeamLogo(teamName) {
-  const key = String(teamName || '').toLowerCase().trim();
-  if (TEAM_LOGO_MAP[key]) return TEAM_LOGO_MAP[key];
+        const sortedInnings = innings.sort((a, b) => Number(a?.Inn || 0) - Number(b?.Inn || 0));
 
-  const normalized = key
-    .replace(/\./g, '')
-    .replace(/\b(fc|cf|ac|sc|afc)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+        // Log API payload for debugging
+        console.log('Full API Payload Structure:', payload);
+        console.log('Innings Data:', innings);
 
-  if (TEAM_LOGO_MAP[normalized]) return TEAM_LOGO_MAP[normalized];
+        inningsRoot.innerHTML = sortedInnings
+            .map((inning, index) => createInningsPanel(inning, playerMap, context, index))
+            .join('');
 
-  for (const [alias, path] of Object.entries(TEAM_LOGO_MAP)) {
-    if (normalized.includes(alias) || alias.includes(normalized)) return path;
-  }
+        tabsWrap.innerHTML = sortedInnings
+            .map((inning, index) => {
+                const teamName = Number(inning?.Tn) === 2 ? context.t2 : context.t1;
+                const teamCode = getTeamCode(teamName);
+                return `<button class="innings-tab${index === 0 ? ' active' : ''}" type="button" data-panel="panel-${index}">${teamCode} Innings</button>`;
+            })
+            .join('');
 
-  return null;
-}
-
-function resolveTeamCountry(teamName) {
-  const key = String(teamName || '').toLowerCase().trim();
-  if (TEAM_COUNTRY_MAP[key]) return TEAM_COUNTRY_MAP[key];
-
-  const normalized = key
-    .replace(/\./g, '')
-    .replace(/\b(fc|cf|ac|sc|afc)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (TEAM_COUNTRY_MAP[normalized]) return TEAM_COUNTRY_MAP[normalized];
-
-  for (const [alias, country] of Object.entries(TEAM_COUNTRY_MAP)) {
-    if (normalized.includes(alias) || alias.includes(normalized)) return country;
-  }
-
-  return 'Unknown';
-}
-
-function abbrev(name) {
-  return String(name || '?')
-    .split(/[\s\-/]+/)
-    .map((w) => w[0] || '')
-    .join('')
-    .slice(0, 3)
-    .toUpperCase();
-}
-
-function loadingHTML(message) {
-  const text = message || 'Loading data...';
-  return `<div class="loading-state"><div class="spinner"></div><p>${text}</p></div>`;
-}
-
-function errorHTML(title, detail) {
-  return `
-    <div class="error-state">
-      <div class="error-icon">!</div>
-      <div class="error-title">${title}</div>
-      <div class="error-sub">${detail || 'Please try again in a few moments.'}</div>
-    </div>`;
+        tabsWrap.hidden = false;
+        inningsRoot.hidden = false;
+        setupInningsTabs();
+    } catch (error) {
+        console.error(error);
+        showMatchError('Unable to fetch innings details at the moment.');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadMatches();
-  loadStandings();
+    if (document.getElementById('matches')) {
+        initHomePage();
+        return;
+    }
 
-  setInterval(() => {
-    if (state.currentPage === 'matches') loadMatches();
-  }, 120000);
+    if (document.getElementById('match-page')) {
+        initMatchPage();
+    }
 });
