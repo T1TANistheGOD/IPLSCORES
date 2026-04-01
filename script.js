@@ -30,13 +30,14 @@ let standingsData = [];
 
 const RAPID_API_HOST = 'livescore6.p.rapidapi.com';
 const RAPID_API_KEY = '644c313eb1msh54941d04889366cp18e9f9jsn5ba62ab2afde';
+const MATCH_LIST_URL = 'https://livescore6.p.rapidapi.com/matches/v2/list-by-league?Category=cricket&Ccd=india&Scd=ipl&Timezone=5.75';
+const MATCH_POLL_INTERVAL_MS = 30000;
 
 // ════════════════════════════════════════════════════════════
 // FETCH AND INITIALIZE DATA
 // ════════════════════════════════════════════════════════════
 
 const fetchLiveScores = async () => {
-    const url = 'https://livescore6.p.rapidapi.com/matches/v2/list-by-league?Category=cricket&Ccd=india&Scd=ipl&Timezone=5.75';
     const options = {
         method: 'GET',
         headers: {
@@ -46,7 +47,7 @@ const fetchLiveScores = async () => {
     };
 
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(MATCH_LIST_URL, options);
         const result = await response.json();
         
         // Store matches data
@@ -102,13 +103,35 @@ function renderSection(sectionName) {
     }
 }
 
+function getInitialSectionFromUrl() {
+    const allowedSections = new Set(['matches', 'results', 'standings']);
+    const params = new URLSearchParams(window.location.search);
+    const sectionFromQuery = String(params.get('section') || '').toLowerCase();
+
+    if (allowedSections.has(sectionFromQuery)) {
+        return sectionFromQuery;
+    }
+
+    const sectionFromHash = String(window.location.hash || '').replace('#', '').toLowerCase();
+    if (allowedSections.has(sectionFromHash)) {
+        return sectionFromHash;
+    }
+
+    return 'matches';
+}
+
 function initHomePage() {
+    const initialSection = getInitialSectionFromUrl();
+    setActiveNav(initialSection);
+    showSection(initialSection);
+
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = link.dataset.section;
             if (!section) return;
             renderSection(section);
+            window.history.replaceState({}, '', `#${section}`);
         });
     });
 
@@ -118,6 +141,7 @@ function initHomePage() {
             const section = link.dataset.section;
             if (!section) return;
             renderSection(section);
+            window.history.replaceState({}, '', `#${section}`);
             window.scrollTo(0, 0);
         });
     });
@@ -180,7 +204,7 @@ function buildMatchDetailsUrl(game) {
         t1: String(game?.T1?.[0]?.Nm || 'Team 1'),
         t2: String(game?.T2?.[0]?.Nm || 'Team 2'),
         date: formatMatchDateTime(game.Esd),
-        status: formatMatchStatus(game.ECo),
+        status: formatMatchStatus(game.ECo, game.EpsL, game.Eps),
         t1s: game.Tr1C1 !== undefined ? String(game.Tr1C1) : '-',
         t1w: game.Tr1CW1 !== undefined ? String(game.Tr1CW1) : '-',
         t1o: game.Tr1CO1 !== undefined ? String(game.Tr1CO1) : '-',
@@ -189,24 +213,29 @@ function buildMatchDetailsUrl(game) {
         t2o: game.Tr2CO1 !== undefined ? String(game.Tr2CO1) : '-',
         t1img: String(images[game?.T1?.[0]?.Nm] || ''),
         t2img: String(images[game?.T2?.[0]?.Nm] || ''),
-        venue: String(game?.Vnm || game?.Ven || game?.Venue || 'Venue TBA')
     });
 
     return `match.html?${params.toString()}`;
 }
 
-function formatMatchStatus(statusText) {
+function formatMatchStatus(statusText, epsLongText = '', epsCode = '', fallbackText = 'Status unavailable') {
     const status = String(statusText || '').trim();
     const normalized = status.toLowerCase();
+    const epsLong = String(epsLongText || '').trim().toLowerCase();
+    const eps = String(epsCode || '').trim().toLowerCase();
 
     if (
+        normalized.includes('not started') ||
+        normalized.includes('scheduled') ||
         normalized.includes('teams will be announced at the toss') ||
-        normalized.includes('teams will be announced at toss')
+        normalized.includes('teams will be announced at toss') ||
+        eps === 'ns' ||
+        epsLong.includes('not started')
     ) {
         return 'Match not started';
     }
 
-    return status || 'Status unavailable';
+    return status || fallbackText;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -288,7 +317,7 @@ function renderMatches(matches, element) {
         
         // Format match date/time
         const matchDateTime = formatMatchDateTime(game.Esd);
-        const matchStatus = formatMatchStatus(game.ECo);
+        const matchStatus = formatMatchStatus(game.ECo, game.EpsL, game.Eps);
                 const detailsUrl = buildMatchDetailsUrl(game);
                 const canOpenDetails = detailsUrl !== '#';
 
@@ -323,7 +352,7 @@ function renderMatches(matches, element) {
             </div>
                         <div class="box-footer">
                             <div class="state">${matchStatus}</div>
-                            <a class="match-info-btn${canOpenDetails ? '' : ' disabled'}" href="${detailsUrl}" title="View Match Details" aria-label="View Match Details"><span class="cricket-icon" aria-hidden="true"></span></a>
+                                        <a class="match-info-btn${canOpenDetails ? '' : ' disabled'}" href="${detailsUrl}" title="View Match Details" aria-label="View Match Details"><i class="fa-solid fa-circle-info" aria-hidden="true"></i></a>
                         </div>
           </div>`
     }).join('');
@@ -464,7 +493,7 @@ function buildPlayerMap(prns) {
         const first = String(player?.Fn || '').trim();
         const last = String(player?.Ln || '').trim();
         const short = String(player?.Snm || '').trim();
-        const fullName = `${first} ${last}`.trim() || short || `Player ${pid}`;
+        const fullName = short || `${first} ${last}`.trim() || `Player ${pid}`;
         map.set(pid, fullName);
     });
 
@@ -695,8 +724,38 @@ async function fetchInnings(eid) {
     return response.json();
 }
 
-function showMatchError(message) {
+async function fetchMatchByEid(eid) {
+    const options = {
+        method: 'GET',
+        headers: {
+            'x-rapidapi-key': RAPID_API_KEY,
+            'x-rapidapi-host': RAPID_API_HOST,
+            'Content-Type': 'application/json'
+        }
+    };
+
+    const response = await fetch(MATCH_LIST_URL, options);
+    if (!response.ok) {
+        throw new Error(`Match list request failed with status ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const stages = Array.isArray(payload?.Stages) ? payload.Stages : [];
+
+    for (const stage of stages) {
+        const events = Array.isArray(stage?.Events) ? stage.Events : [];
+        const found = events.find((event) => String(event?.Eid || '') === String(eid));
+        if (found) {
+            return found;
+        }
+    }
+
+    return null;
+}
+
+function showMatchError(message, title = '') {
     const errorWrap = document.getElementById('error-state');
+    const errorTitle = document.getElementById('error-title');
     const errorText = document.getElementById('error-text');
     const loading = document.getElementById('loading-state');
     const inningsRoot = document.getElementById('innings-root');
@@ -708,8 +767,43 @@ function showMatchError(message) {
 
     if (errorWrap) {
         errorWrap.hidden = false;
-        if (errorText) errorText.textContent = message;
+        errorWrap.style.display = 'grid';
+        if (errorTitle) {
+            errorTitle.textContent = title;
+            errorTitle.style.display = title ? 'block' : 'none';
+        }
+        if (errorText) {
+            errorText.textContent = message || '';
+            errorText.style.display = message ? 'block' : 'none';
+        }
     }
+}
+
+function hideMatchError() {
+    const errorWrap = document.getElementById('error-state');
+    const errorTitle = document.getElementById('error-title');
+    const errorText = document.getElementById('error-text');
+    if (errorWrap) {
+        errorWrap.hidden = true;
+        errorWrap.style.display = 'none';
+    }
+    if (errorTitle) {
+        errorTitle.textContent = '';
+        errorTitle.style.display = 'none';
+    }
+    if (errorText) {
+        errorText.textContent = '';
+        errorText.style.display = 'none';
+    }
+}
+
+function isMatchNotStarted(statusText) {
+    const status = String(statusText || '').toLowerCase();
+    return (
+        status.includes('not started') ||
+        status.includes('scheduled') ||
+        status.includes('toss')
+    );
 }
 
 function setMatchHeader(context) {
@@ -726,56 +820,145 @@ function setMatchHeader(context) {
     setImage('team-two-logo', context.t2img, context.t2);
 }
 
+function buildContextFromMatchEvent(event, previousContext) {
+    const t1 = sanitizeText(event?.T1?.[0]?.Nm, previousContext.t1);
+    const t2 = sanitizeText(event?.T2?.[0]?.Nm, previousContext.t2);
+
+    return {
+        ...previousContext,
+        title: sanitizeText(event?.ErnInf, previousContext.title),
+        t1,
+        t2,
+        date: event?.Esd ? formatMatchDateTime(event.Esd) : previousContext.date,
+        status: formatMatchStatus(event?.ECo, event?.EpsL, event?.Eps, previousContext.status),
+        t1s: event?.Tr1C1 !== undefined ? String(event.Tr1C1) : previousContext.t1s,
+        t1w: event?.Tr1CW1 !== undefined ? String(event.Tr1CW1) : previousContext.t1w,
+        t1o: event?.Tr1CO1 !== undefined ? String(event.Tr1CO1) : previousContext.t1o,
+        t2s: event?.Tr2C1 !== undefined ? String(event.Tr2C1) : previousContext.t2s,
+        t2w: event?.Tr2CW1 !== undefined ? String(event.Tr2CW1) : previousContext.t2w,
+        t2o: event?.Tr2CO1 !== undefined ? String(event.Tr2CO1) : previousContext.t2o,
+        t1img: images[t1] || previousContext.t1img,
+        t2img: images[t2] || previousContext.t2img,
+        venue: sanitizeText(event?.Vnm || event?.Ven || event?.Venue, previousContext.venue)
+    };
+}
+
+function renderInningsPanels(payload, context) {
+    const innings = Array.isArray(payload?.SDInn) ? payload.SDInn : [];
+    const playerMap = buildPlayerMap(payload?.Prns);
+    const inningsRoot = document.getElementById('innings-root');
+    const tabsWrap = document.getElementById('innings-tabs');
+
+    if (!inningsRoot || !tabsWrap || !innings.length) {
+        return false;
+    }
+
+    const sortedInnings = innings.sort((a, b) => Number(a?.Inn || 0) - Number(b?.Inn || 0));
+
+    inningsRoot.innerHTML = sortedInnings
+        .map((inning, index) => createInningsPanel(inning, playerMap, context, index))
+        .join('');
+
+    tabsWrap.innerHTML = sortedInnings
+        .map((inning, index) => {
+            const teamName = Number(inning?.Tn) === 2 ? context.t2 : context.t1;
+            const teamCode = getTeamCode(teamName);
+            return `<button class="innings-tab${index === 0 ? ' active' : ''}" type="button" data-panel="panel-${index}">${teamCode} Innings</button>`;
+        })
+        .join('');
+
+    tabsWrap.hidden = false;
+    inningsRoot.hidden = false;
+    hideMatchError();
+    setupInningsTabs();
+    return true;
+}
+
+function startMatchLiveUpdates(initialContext) {
+    let liveContext = { ...initialContext };
+
+    const refreshMatch = async () => {
+        const [eventResult, inningsResult] = await Promise.allSettled([
+            fetchMatchByEid(liveContext.eid),
+            fetchInnings(liveContext.eid)
+        ]);
+
+        if (eventResult.status === 'fulfilled' && eventResult.value) {
+            liveContext = buildContextFromMatchEvent(eventResult.value, liveContext);
+            setMatchHeader(liveContext);
+        }
+
+        if (inningsResult.status === 'fulfilled') {
+            renderInningsPanels(inningsResult.value, liveContext);
+        }
+    };
+
+    const pollId = window.setInterval(() => {
+        refreshMatch().catch((error) => {
+            console.error('Live refresh failed:', error);
+        });
+    }, MATCH_POLL_INTERVAL_MS);
+
+    window.addEventListener('beforeunload', () => {
+        window.clearInterval(pollId);
+    }, { once: true });
+}
+
 async function initMatchPage() {
-    const context = parseMatchContext();
+    let context = parseMatchContext();
     setMatchHeader(context);
+    hideMatchError();
 
     if (!context.eid) {
-        showMatchError('Missing match EID. Open this page from a Match Info button.');
+        showMatchError(
+            'Please open this page using the Match Info button from the matches list.',
+            'Match link is incomplete'
+        );
         return;
     }
 
     try {
-        const payload = await fetchInnings(context.eid);
-        const innings = Array.isArray(payload?.SDInn) ? payload.SDInn : [];
-        const playerMap = buildPlayerMap(payload?.Prns);
+        const [inningsPayload, liveEvent] = await Promise.all([
+            fetchInnings(context.eid),
+            fetchMatchByEid(context.eid)
+        ]);
+
+        if (liveEvent) {
+            context = buildContextFromMatchEvent(liveEvent, context);
+            setMatchHeader(context);
+        }
 
         const loading = document.getElementById('loading-state');
         const inningsRoot = document.getElementById('innings-root');
-        const tabsWrap = document.getElementById('innings-tabs');
 
         if (loading) loading.hidden = true;
         if (loading) loading.remove();
 
-        if (!innings.length) {
-            showMatchError('No innings data available yet for this match.');
+        const hasInnings = renderInningsPanels(inningsPayload, context);
+        if (!hasInnings) {
+            if (isMatchNotStarted(context.status)) {
+                showMatchError(
+                    'This match has not started yet. The innings scorecard will appear once play begins.',
+                    'Innings not available yet'
+                );
+            } else {
+                showMatchError(
+                    'Live innings details are not available right now. Please check again shortly.',
+                    'Innings data pending'
+                );
+            }
             return;
         }
 
-        const sortedInnings = innings.sort((a, b) => Number(a?.Inn || 0) - Number(b?.Inn || 0));
-
-        // Log API payload for debugging
-        console.log('Full API Payload Structure:', payload);
-        console.log('Innings Data:', innings);
-
-        inningsRoot.innerHTML = sortedInnings
-            .map((inning, index) => createInningsPanel(inning, playerMap, context, index))
-            .join('');
-
-        tabsWrap.innerHTML = sortedInnings
-            .map((inning, index) => {
-                const teamName = Number(inning?.Tn) === 2 ? context.t2 : context.t1;
-                const teamCode = getTeamCode(teamName);
-                return `<button class="innings-tab${index === 0 ? ' active' : ''}" type="button" data-panel="panel-${index}">${teamCode} Innings</button>`;
-            })
-            .join('');
-
-        tabsWrap.hidden = false;
-        inningsRoot.hidden = false;
-        setupInningsTabs();
+        if (inningsRoot) inningsRoot.hidden = false;
+        hideMatchError();
+        startMatchLiveUpdates(context);
     } catch (error) {
         console.error(error);
-        showMatchError('Unable to fetch innings details at the moment.');
+        showMatchError(
+            'We could not fetch innings details right now. Please refresh and try again.',
+            'Unable to load innings'
+        );
     }
 }
 
